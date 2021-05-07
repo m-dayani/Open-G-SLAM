@@ -1,2 +1,9 @@
 # Open-G-SLAM
-A general platform for SLAM projects: combine different techniques, sensors, etc.
+A general repository to combine SLAM methods, fuse sensors, etc.
+
+The goal of this project is to build a flexible SLAM system.
+Objectives:
+  - Fusing different sensors
+  - Combining different techniques: graph-based SLAM, KLT optical flow, filtering methods, direct/indirect, deep learning, ...
+  - Redefinition of concepts: Pose, Map, Connections, ...
+  - Flexible enough to build a cheep tracker with an IMU, or a complicated system with Cameras, Range-finders, ...
