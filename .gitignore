@@ -37,6 +37,9 @@ ehthumbs.db
 Thumbs.db
 
 
+# This file
+.gitignore
+
 # Configuration Files
 config/*
 
@@ -46,6 +49,12 @@ build-debug/*
 
 # Installation Path
 lib/*
+
+# Thirdparty:
+thirdparty/DBoW2/build/*
+thirdparty/DBoW2/lib/*
+thirdparty/g2o/build/*
+thirdparty/g2o/lib/*
 
 
 
