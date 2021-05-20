@@ -1,3 +1,0 @@
-/home/masoud/proj_slam/orb_slam3/Thirdparty/DBoW2/build/CMakeFiles/rebuild_cache.dir
-/home/masoud/proj_slam/orb_slam3/Thirdparty/DBoW2/build/CMakeFiles/edit_cache.dir
-/home/masoud/proj_slam/orb_slam3/Thirdparty/DBoW2/build/CMakeFiles/DBoW2.dir

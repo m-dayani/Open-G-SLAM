@@ -1,0 +1,225 @@
+%YAML:1.0
+
+# ETHZ Public Event Dataset Parameters
+
+#--------------------------------------------------------------------------------------------
+# Dataset Parameters.
+#--------------------------------------------------------------------------------------------
+
+DS:
+  # Dataset name (used to save/load final pose results
+  name: "ev_ethz"
+  # Valid options: "euroc", "ev_ethz", ("ev_mvsec")
+  format: "ev_ethz"
+  # Different configurations: idle, mono_im, mono_im_imu, mono_ev, mono_ev_imu,
+  #    mono_ev_im, mono_ev_im_imu
+  sensorConfig: "mono_im"
+
+  # Paths other than root ds path are relative to root ds
+  # Only need to change the root if format is correct
+  paths:
+      root: "/path/to/Datasets/Event_ethz"
+      imageFile: "images.txt"
+      imageBase: ""
+      events: "events.txt"
+      imu: "imu.txt"
+      gt: "groundtruth.txt"
+      resultsBase: ""
+
+  sequence:
+    # -1 for all sequences, run the target seq (starts from 0)
+    target: 4
+    names:
+        - shapes_6dof
+        - poster_6dof
+        - boxes_6dof
+        - hdr_boxes
+        - dynamic_6dof
+        - outdoors_walking
+        - outdoors_running
+
+  # Process each sequence nMaxIter times
+  numMaxIter: 1
+
+  # Timestamp factor: 1e9 means ts values are recorded in ns
+  tsFactor: 1.0
+
+  # Other options (currently not used)
+  gtQwFirst: 1
+  imuGyroFirst: 1
+  gtPosFirst: 1
+
+#--------------------------------------------------------------------------------------------
+# Camera Parameters. Adjust them!
+#--------------------------------------------------------------------------------------------
+
+Camera:
+  type: "PinHole"
+
+  # Camera calibration and distortion parameters (OpenCV)
+  calib:
+    # Intrinsics: [fx fy cx cy]
+    intrinsics: [199.092366542, 198.82882047, 132.192071378, 110.712660011]
+
+    # Distortion Type
+    distType: "radial-tangential"
+
+    # Distortion Coefficients: [k1 k2 p1 p2 [k3]] or [k1 k2 k3 k4 [k5]]
+    distCoefs: [-0.368436311798, 0.150947243557, -0.000296130534385, -0.000759431726241]
+
+  # Camera resolution [width, height]
+  resolution: [240, 180]
+
+  # Camera frames per second
+  fps: 24.0
+
+  # Transformation from camera to body-frame (imu)
+  Tbc: !!opencv-matrix
+    rows: 4
+    cols: 4
+    dt: f
+    data: [ 0.9999, -0.0122, 0.0063, 0.0067,
+            0.0121, 0.9998, 0.0093, 0.0007,
+            -0.0061, -0.0092, 0.9999, 0.0342,
+            0.0, 0.0, 0.0, 1.0 ]
+
+  # Color order of the images (0: BGR, 1: RGB. It is ignored if images are grayscale)
+  RGB: 1
+
+  # Stereo Parameters:
+  # stereo baseline times fx
+  bf: 47.90639384423901
+
+  # Close/Far threshold. Baseline times.
+  ThDepth: 35.0
+
+#--------------------------------------------------------------------------------------------
+# IMU Parameters.
+#--------------------------------------------------------------------------------------------
+
+IMU:
+  NoiseGyro: 1.7e-4 #1.6968e-04
+  NoiseAcc: 2.0000e-3 #2.0e-3
+  GyroWalk: 1.9393e-05
+  AccWalk: 3.0000e-03 # 3e-03
+
+  Frequency: 1000
+
+#--------------------------------------------------------------------------------------------
+# Feature Detection and Extraction
+#--------------------------------------------------------------------------------------------
+
+Features:
+  # Feature detection mode (Regular Images): orb: ORB, akaze: AKAZE, mixed: Mixed
+  mode: "orb"
+
+  # ---------------------------------- ORB Parameters -------------------------------------
+
+  ORB:
+    # Relative to the current execution path
+    pathVocab: "Vocabulary/ORBvoc.txt"
+
+    extractor:
+      # ORB Extractor: Number of features per image
+      nFeatures: 1000
+
+      # ORB Extractor: Scale factor between levels in the scale pyramid
+      scaleFactor: 1.1
+
+      # ORB Extractor: Number of levels in the scale pyramid
+      nLevels: 8
+
+      # ORB Extractor: Fast threshold
+      # Image is divided in a grid. At each cell FAST are extracted imposing a minimum response.
+      # Firstly we impose iniThFAST. If no corners are detected we impose a lower value minThFAST
+      # You can lower these values if your images have low contrast
+      iniThFAST: 10
+      minThFAST: 0
+
+  # --------------------------------- AKAZE Parameters ------------------------------------
+
+  AKAZE:
+    extractor:
+      # Number of features per image
+      nFeatures: 500
+
+      # Scale factor between levels in the scale pyramid
+      # AKAZEextractor.scaleFactor: 1.05
+
+      # Number of levels in the scale pyramid
+      # Better to choose these according to ORB for consistency
+      nOctaveLayers: 7 # nOL = ln(2)/ln(ORB_sf)
+      nOctaves: 1 # nO = ORB_nL/nOL
+
+      # Threshold
+      iniTh: 1e-5
+      minTh: 1e-6
+
+#--------------------------------------------------------------------------------------------
+# Viewer Parameters
+#---------------------------------------------------------------------------------------------
+
+Viewer:
+  UseViewer: 1
+  KeyFrameSize: 0.05
+  KeyFrameLineWidth: 1
+  GraphLineWidth: 0.9
+  PointSize: 2
+  CameraSize: 0.08
+  CameraLineWidth: 3
+  ViewpointX: 0
+  ViewpointY: -0.7
+  ViewpointZ: -1.8
+  ViewpointF: 500
+
+#--------------------------------------------------------------------------------------------
+# Event Parameters
+#---------------------------------------------------------------------------------------------
+
+Event:
+  Data:
+    isRectified: false
+
+    l1FixedWin: false
+    l1ChunkSize: 2000
+    l1NumLoop: 3
+
+    minEvGenRate: 1.0 # Ne/pixel/sec
+    maxEvGenRate: 100.0 # Currently useless
+    maxPixelDisp: 3.0 # pixels
+
+  Algorithm:
+    # Tracking mode:
+    # odom: pure odometery, tlm: tracking local map, tlm-chr: tracking LM with refresh ref.
+    l2TrackMode: "tlm"
+
+    # Track L1 intermediate frames (tiny frames) in L2:
+    trackTinyFrames: true
+
+    l1ImSigma: 1.0
+    l2ImSigma: 1.0
+
+  Features:
+    # Detection Mode: 0: FAST, 1: ORB (no descriptors), 2: Mixed (octave0: FAST, other: ORB)
+    detMode: 2
+
+    maxNumPts: 300
+
+    fastTh: 0
+    l1ScaleFactor: 1.5
+    l1NLevels: 2
+    l2ScaleFactor: 1.1
+    l2NLevels: 8
+
+  KLT:
+    maxLevel: 1
+    winSize: 23
+    eps: 0.03
+    maxIter: 10
+    maxThRefreshPoints: 0.9
+    distRefreshPoints: 1.0
+
+
+
+
+
