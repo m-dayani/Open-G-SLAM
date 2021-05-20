@@ -1,0 +1,4 @@
+
+// the configured options and settings for Tutorial
+#define OG_SLAM_VERSION_MAJOR @OG_SLAM_VERSION_MAJOR@
+#define OG_SLAM_VERSION_MINOR @OG_SLAM_VERSION_MINOR@
