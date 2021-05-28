@@ -31,8 +31,19 @@ list(APPEND LIST_INCLUDE_DIRS ${DATA_LOADERS_DIR})
 set(DATA_STORE_DIR ${DATA_LOADERS_DIR}/DataStore)
 list(APPEND LIST_INCLUDE_DIRS ${DATA_STORE_DIR})
 
+set(VISUALIZATION_DIR Visualization)
+list(APPEND LIST_INCLUDE_DIRS ${VISUALIZATION_DIR})
+
+set(FRONTEND_DIR FrontEnd)
+set(FE_CAMERA_DIR ${FRONTEND_DIR}/Camera)
+set(FE_CAMERA_MODELS_DIR ${FE_CAMERA_DIR}/Models)
+list(APPEND LIST_INCLUDE_DIRS ${FE_CAMERA_MODELS_DIR})
+set(FE_CAMERA_UTILS_DIR ${FE_CAMERA_DIR}/Utils)
+list(APPEND LIST_INCLUDE_DIRS ${FE_CAMERA_UTILS_DIR})
+
 set(ALL_H_FILES
         ${UTILS_DIR}/DataConversion.h
+        ${UTILS_DIR}/TabularTextWriter.h
         ${UTILS_YAML_PARSER_DIR}/YamlParserCV.h
         ${PARAMS_TYPES_DIR}/SensorConfig.h
         ${PARAMS_TYPES_DIR}/CamParams.h
@@ -50,15 +61,25 @@ set(ALL_H_FILES
         ${DATA_TYPES_DIR}/Pose.h
         ${DATA_TYPES_DIR}/PoseHook.h
         ${DATA_TYPES_DIR}/SharedQueue.h
+        ${DATA_TYPES_DIR}/Event.h
+        ${DATA_TYPES_DIR}/EventHook.h
         ${DATA_STORE_DIR}/TabularTextDS.h
         ${DATA_STORE_DIR}/ImageDS.h
         ${DATA_STORE_DIR}/IMU_DS.h
         ${DATA_STORE_DIR}/PoseDS.h
+        ${DATA_STORE_DIR}/EventDS.h
         ${DATA_LOADERS_DIR}/BaseLoader.h
         ${DATA_LOADERS_DIR}/EurocLoader.h
+        ${DATA_LOADERS_DIR}/EvETHZ_Loader.h
+        ${VISUALIZATION_DIR}/Visualization.h
+        ${FE_CAMERA_MODELS_DIR}/GeometricCamera.h
+        ${FE_CAMERA_MODELS_DIR}/Pinhole.h
+        ${FE_CAMERA_MODELS_DIR}/KannalaBrandt8.h
+        ${FE_CAMERA_UTILS_DIR}/TwoViewReconstruction.h
 )
 set(ALL_SRC_FILES
         ${UTILS_DIR}/DataConversion.cpp
+        ${UTILS_DIR}/TabularTextWriter.cpp
         ${UTILS_YAML_PARSER_DIR}/YamlParserCV.cpp
         ${PARAMS_TYPES_DIR}/SensorConfig.cpp
         ${PARAMS_TYPES_DIR}/CamParams.cpp
@@ -76,12 +97,20 @@ set(ALL_SRC_FILES
         ${DATA_TYPES_DIR}/Pose.cpp
         ${DATA_TYPES_DIR}/PoseHook.cpp
         ${DATA_TYPES_DIR}/SharedQueue.cpp
+        ${DATA_TYPES_DIR}/Event.cpp
+        ${DATA_TYPES_DIR}/EventHook.cpp
         ${DATA_STORE_DIR}/TabularTextDS.cpp
         ${DATA_STORE_DIR}/ImageDS.cpp
         ${DATA_STORE_DIR}/IMU_DS.cpp
         ${DATA_STORE_DIR}/PoseDS.cpp
+        ${DATA_STORE_DIR}/EventDS.cpp
         ${DATA_LOADERS_DIR}/BaseLoader.cpp
         ${DATA_LOADERS_DIR}/EurocLoader.cpp
+        ${DATA_LOADERS_DIR}/EvETHZ_Loader.cpp
+        ${VISUALIZATION_DIR}/Visualization.cpp
+        ${FE_CAMERA_MODELS_DIR}/Pinhole.cpp
+        ${FE_CAMERA_MODELS_DIR}/KannalaBrandt8.cpp
+        ${FE_CAMERA_UTILS_DIR}/TwoViewReconstruction.cpp
 )
 
 include_directories(
@@ -114,7 +143,7 @@ target_link_libraries(${PROJECT_NAME}
         ${CERES_LIBRARIES}
         ${OpenCV_LIBS}
 #        ${Pangolin_LIBRARIES}
-#        ${PROJECT_SOURCE_DIR}/Thirdparty/DBoW2/lib/libDBoW2.so
+        ${CMAKE_SOURCE_DIR}/thirdparty/DBoW2/lib/libDBoW2.so
         ${CMAKE_SOURCE_DIR}/thirdparty/g2o/lib/libg2o.so
         -lboost_system
         -lboost_filesystem

@@ -20,11 +20,12 @@ configure_file(${PROJ_CORE_PATH}/GlobalConfig.h.in ${PROJ_CORE_PATH}/GlobalConfi
 
 # External dependencies
 add_subdirectory(${PROJ_THIRDPARTY_PATH}/g2o)
+add_subdirectory(${PROJ_THIRDPARTY_PATH}/DBoW2)
 
 add_subdirectory(${PROJ_EXAMPLES_PATH})
 add_subdirectory(${PROJ_CORE_PATH})
 # WARNING: Always source ros setup before config.
-#add_subdirectory(${PROJ_ROS_PATH})
+add_subdirectory(${PROJ_ROS_PATH})
 
 
 install(FILES ${PROJECT_BINARY_DIR}/${PROJ_CORE_PATH}/GlobalConfig.h

@@ -18,6 +18,8 @@
 #include <dvs_msgs/EventArray.h>
 
 #include "BaseLoader.h"
+#include "EventHook.h"
+
 
 namespace OG_SLAM {
 
@@ -32,6 +34,24 @@ namespace OG_SLAM {
         void playGroundTruth();
         void play() override;
 
+        unsigned int getNumImages() override;
+
+        unsigned int getNumTotalImages() override;
+
+        void getImage(size_t idx, cv::Mat &image, double &ts) override;
+
+        void getImage(size_t idx, cv::Mat &image, double &ts, std::string &imPath) override;
+
+        double getImageTime(size_t idx) override;
+
+        std::string getImageFileName(size_t idx) override;
+
+        void resetCurrSequence() override;
+
+        unsigned int getNextImu(double ts, std::vector<IMU_DataPtr> &vpImuData) override;
+
+        unsigned int getNextPoseGT(double ts, std::vector<PosePtr> &vpPose) override;
+
     protected:
         void loadSequence(const std::string &dsRoot, const std::string &seqPath, size_t idx) override;
         bool checkLoadState() override;
@@ -45,6 +65,9 @@ namespace OG_SLAM {
 
         // All relative data paths are Rosbag topics
         std::string mPathEvents;
+
+        std::vector<EventHookPtr> mvpEventHooks;
+        // TODO: CamInfo Types and Hooks
 
         std::vector<std::string> mTopics;
     };

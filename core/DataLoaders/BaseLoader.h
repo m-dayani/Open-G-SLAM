@@ -31,8 +31,8 @@ namespace OG_SLAM {
         virtual void addIMU_Hook(IMU_HookPtr& pImuHook);
         virtual void addGT_PoseHook(PoseHookPtr& pPoseHook);
 
-        // default play: Image-based!
-        virtual void play();
+        // Default play: Image-based!
+        virtual void play() = 0;
 
         //Getters/Setters
         std::string getDatasetName() const { return mDsName; }
@@ -45,7 +45,9 @@ namespace OG_SLAM {
         //Utils
         virtual bool isGood() const;
         virtual void resetSequences();
-        virtual void resetCurrSequence();
+        virtual void resetCurrSequence() = 0;
+
+        virtual std::string printLoaderStateStr();
 
         void incSequence();
         void decSequence();
@@ -53,20 +55,22 @@ namespace OG_SLAM {
         virtual bool checkSequence(unsigned int seq) const;
 
         //Image
-        unsigned int getNumImages();
-        unsigned int getNumTotalImages();
-        void getImage(size_t idx, cv::Mat &image, double &ts);
-        void getImage(size_t idx, cv::Mat &image, double &ts, std::string& imPath);
-        double getImageTime(size_t idx);
-        std::string getImageFileName(size_t idx, bool fullName = true);
+        virtual unsigned int getNumImages() = 0;
+        virtual unsigned int getNumTotalImages() = 0;
+
+        virtual double getImageTime(size_t idx) = 0;
+        virtual std::string getImageFileName(size_t idx) = 0;
+
+        virtual void getImage(size_t idx, cv::Mat &image, double &ts) = 0;
+        virtual void getImage(size_t idx, cv::Mat &image, double &ts, std::string& imPath) = 0;
 
         //IMU
         // initTs is in (sec)
         //void initImu(double initTs, int idx = -1);
-        unsigned int getNextImu(double ts, std::vector<IMU_DataPtr> &vpImuData);
+        virtual unsigned int getNextImu(double ts, std::vector<IMU_DataPtr> &vpImuData) = 0;
 
         //GT
-        unsigned int getNextPoseGT(double ts, std::vector<PosePtr>& vpPose);
+        virtual unsigned int getNextPoseGT(double ts, std::vector<PosePtr>& vpPose) = 0;
 
     protected:
         bool checkDatasetPaths(const DS_ParamsPtr& pDsParams);
@@ -75,18 +79,13 @@ namespace OG_SLAM {
 
         std::string getSequencePath();
 
+        void loadData();
         virtual void loadSequence(const std::string &dsRoot, const std::string &seqPath, size_t idx);
+
+        bool updateLoadState();
         virtual bool checkLoadState();
 
-        void loadData();
-        bool updateLoadState();
-
     protected:
-        // Data Stores
-        std::vector<ImageDS_UPtr> mvpImDs;
-        std::vector<IMU_DS_UPtr> mvpImuDs;
-        std::vector<PoseDS_UPtr> mvpGtDs;
-
         // Hooks
         std::vector<ImageHookPtr> mvpImageHooks;
         std::vector<IMU_HookPtr> mvpIMU_Hooks;
@@ -115,6 +114,10 @@ namespace OG_SLAM {
         unsigned int mnMaxIter;
 
         double mTsFactor;
+
+        bool mbGtQwFirst;
+        bool mbGtPosFirst;
+        bool mbImuGyroFirst;
 
         //std::shared_ptr<MyCalibrator> mpCalib;
 

@@ -11,6 +11,7 @@
 #include <memory>
 #include <mutex>
 
+
 namespace OG_SLAM {
 
     template<typename T>

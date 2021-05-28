@@ -7,70 +7,25 @@
 #include <chrono>
 #include <thread>
 
-#include <opencv2/imgproc/imgproc.hpp>
-#include <opencv2/highgui/highgui.hpp>
-
 #include <ros/package.h>
+#include <ros/init.h>
+
+//#include <glog/logging.h>
 
 #include "ParameterServer.h"
 #include "MVSEC_Loader.h"
+#include "Visualization.h"
+#include "TabularTextWriter.h"
 
 using namespace std;
 using namespace cv;
 using namespace OG_SLAM;
 
-class ImageDisplay {
-public:
-
-    explicit ImageDisplay(float fps) : mfps(fps), mStop(false) {
-
-        mqpImages = make_shared<ImageQueue>();
-    }
-
-    void run() {
-
-        cv::namedWindow("Sample Image", cv::WINDOW_AUTOSIZE);
-
-        while (!mStop) {
-
-            if (!mqpImages->empty()) {
-
-                ImagePtr pImage = mqpImages->front();
-
-                if (pImage->mImage.empty()) {
-                    mqpImages->pop();
-                    break;
-                }
-
-                double imTs = 0.0;
-                if (dynamic_cast<ImageTs*>(pImage.get())) {
-                    auto* pImageTs = dynamic_cast<ImageTs*>(pImage.get());
-                    imTs = pImageTs->mTimeStamp;
-                }
-                cv::Mat imageToShow = pImage->mImage.clone();
-
-                cv::cvtColor(imageToShow, imageToShow, CV_GRAY2BGR);
-
-                cv::putText(imageToShow, to_string(imTs), cv::Point2f(10,10),
-                            cv::FONT_HERSHEY_COMPLEX_SMALL,((float)imageToShow.cols*1.5f)/720.f,
-                            cv::Scalar(0, 180, 0), 1);
-
-                cv::imshow("Sample Image", imageToShow);
-                cv::waitKey(static_cast<int>(1000.f / mfps));
-                mqpImages->pop();
-            }
-        }
-    }
-
-    ImageQueuePtr mqpImages;
-    float mfps;
-    bool mStop;
-};
-
 
 int main(int argc, char* argv[]) {
 
-    //ros::init(argc, argv, "OG_SLAM");
+    ros::init(argc, argv, "OG_SLAM");
+//    google::InitGoogleLogging(argv[0]);
 
     if (argc < 2) {
         cout << "Usage: " << argv[0] << " settings.yaml\n";
@@ -80,36 +35,58 @@ int main(int argc, char* argv[]) {
     string settingsFile = argv[1];
     cout << "Settings File: " << settingsFile << endl;
 
+    // Testing parameter server
     // Load Settings
     shared_ptr<ParameterServer> pParamServer = make_shared<ParameterServer>(settingsFile);
     cout << pParamServer->getFullStat();
 
-    // Init. Loader
-    MVSEC_Loader mvsecLoader(pParamServer->getDS_Params());
-    cout << "Output Base Name: " << mvsecLoader.getOutputBasePath() << endl;
-
     // Get required camera parameters
     CamParamsPtr pCamParams = pParamServer->getCamParams();
-    ImageDisplay imageDisplay(pCamParams->fps);
+    SimpleImageDisplay imageDisplay(pCamParams->fps);
+
+    // Testing different loaders
+    // Init. Loader
+    MVSEC_Loader mvsecLoader(pParamServer->getDS_Params());
+    cout << mvsecLoader.printLoaderStateStr();
 
     // Prepare & add image hook to get images
     ImageFilterPtr imFilterGray = make_shared<ImageFilterGray>(pCamParams->mbRGB);
     ImageHookPtr imageHook = make_shared<ImageHookFiltered>(imageDisplay.mqpImages, imFilterGray);
-
     mvsecLoader.addImageHook(imageHook);
 
+    string imuFile = "../../../data/dummy-imu.txt";
+    IMU_Writer imuWriter(imuFile);
+    IMU_HookPtr pImuHook = make_shared<IMU_Hook>(imuWriter.mpDataQueue);
+    mvsecLoader.addIMU_Hook(pImuHook);
+
+    string gtPoseFile = "../../../data/dummy-gt-pose.txt";
+    GtPoseWriter gtPoseWriter(gtPoseFile);
+    PoseHookPtr pPoseHook = make_shared<PoseHook>(gtPoseWriter.mpDataQueue);
+    mvsecLoader.addGT_PoseHook(pPoseHook);
+
     // Run image display thread
-    new std::thread(&ImageDisplay::run, &imageDisplay);
+    auto* mptImDisplay = new std::thread(&SimpleImageDisplay::run, &imageDisplay);
+    auto* mptImuWriter = new std::thread(&IMU_Writer::run, &imuWriter);
+    auto* mptGtPoseWriter = new std::thread(&GtPoseWriter::run, &gtPoseWriter);
 
     // Play data loader
+    cout << "-- Play ROSBAG Data: It might take a long time to load bag data!\n";
     mvsecLoader.play();
 
     // Wait until all images are displayed
     while (!imageDisplay.mqpImages->empty())
         std::this_thread::sleep_for(chrono::milliseconds(20));
 
-    imageDisplay.mStop = true;
-    //mptImageDisplay->join();
+    imageDisplay.mbStop = true;
+    imuWriter.mbStop = true;
+    gtPoseWriter.mbStop = true;
+
+    mptImDisplay->join();
+    delete mptImDisplay;
+    mptImuWriter->join();
+    delete mptImuWriter;
+    mptGtPoseWriter->join();
+    delete mptGtPoseWriter;
 
     return 0;
 }

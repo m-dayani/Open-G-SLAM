@@ -9,7 +9,7 @@ using namespace std;
 namespace OG_SLAM {
 
     PoseDS::PoseDS(const string &filePath, bool _qwFirst, bool _posFirst, const double tsFactor) :
-            posFirst(_posFirst), qwFirst(_qwFirst) {
+            mSIdx(0), posFirst(_posFirst), qwFirst(_qwFirst) {
 
         boost::filesystem::path gtFile(filePath);
         mTsFactor = tsFactor;
@@ -112,19 +112,19 @@ namespace OG_SLAM {
 
     unsigned long PoseDS::getNextChunk(double tsEnd, vector<PosePtr> &vpPoseGT, const double tsFactor) {
 
-        unsigned long imuCnt = 0;
+        unsigned long poseCnt = 0;
         if (mSIdx < 0 || mSIdx >= mvGtData.size())
-            return imuCnt;
+            return poseCnt;
 
         const double invTsFactor = 1.0 / tsFactor;
 
-        while (mvGtData[mSIdx]->ts * invTsFactor <= tsEnd) {
+        while (mSIdx < mvGtData.size() && mvGtData[mSIdx]->ts * invTsFactor <= tsEnd) {
 
             vpPoseGT.push_back(mvGtData[mSIdx]);
             this->incIdx();
-            imuCnt++;
+            poseCnt++;
         }
-        return imuCnt;
+        return poseCnt;
     }
 
     void PoseDS::reset() {

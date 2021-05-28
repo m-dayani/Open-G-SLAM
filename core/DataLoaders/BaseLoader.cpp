@@ -13,7 +13,9 @@ namespace OG_SLAM {
 
     BaseLoader::BaseLoader(const DS_ParamsPtr &pDsParams) :
             mLoadState(TabularTextDS::LoadState::BAD_PATH), mDsFormat(pDsParams->mFormat), mDsName(pDsParams->mName),
-            mSeqCount(0), mSeqTarget(0), mSeqIdx(0), mnMaxIter(pDsParams->mnMaxIter), mTsFactor(pDsParams->mfTsFactor) {
+            mSeqCount(0), mSeqTarget(0), mSeqIdx(0), mnMaxIter(pDsParams->mnMaxIter), mTsFactor(pDsParams->mfTsFactor),
+            mbGtQwFirst(pDsParams->mbGtQwFirst), mbGtPosFirst(pDsParams->mbGtPosFirst),
+            mbImuGyroFirst(pDsParams->mbImuGyroFirst){
 
         // Check important paths
         if (checkDatasetPaths(pDsParams)) {
@@ -123,23 +125,7 @@ namespace OG_SLAM {
         }
     }
 
-    bool BaseLoader::checkLoadState() {
-
-        unsigned imDsSize = mvpImDs.size();
-        unsigned imuDsSize = mvpImuDs.size();
-        unsigned gtDsSize = mvpGtDs.size();
-
-        bool cond = imDsSize == imuDsSize && imDsSize == gtDsSize && imDsSize > 0;
-        if (cond) {
-            mSeqCount = imDsSize;
-            mLoadState = TabularTextDS::GOOD;
-        }
-        else {
-            mSeqCount = 0;
-            mLoadState = TabularTextDS::BAD_DATA;
-        }
-        return cond;
-    }
+    bool BaseLoader::checkLoadState() {}
 
     bool BaseLoader::updateLoadState() {
 
@@ -157,10 +143,6 @@ namespace OG_SLAM {
 
         if (mSeqCount) {
 
-            mvpImDs.resize(mSeqCount);
-            mvpImuDs.resize(mSeqCount);
-            mvpGtDs.resize(mSeqCount);
-
             if (mSeqTarget < 0) {
                 for (size_t seq = 0; seq < mSeqCount; seq++) {
                     loadSequence(mPathDsRoot, mSeqNames[seq], seq);
@@ -172,14 +154,8 @@ namespace OG_SLAM {
         }
     }
 
-    // Deal with timestamp units from the beginning
-    void BaseLoader::loadSequence(const string &dsRoot, const string &sqPath, const size_t idx) {
-
-        string seqPath = dsRoot + '/' + sqPath + '/';
-        this->mvpImDs[idx] = std::make_unique<ImageDS>(seqPath + mPathImFile, seqPath + mPathImBase, mTsFactor);
-        this->mvpImuDs[idx] = std::make_unique<IMU_DS>(seqPath + mPathImu, true, mTsFactor);
-        this->mvpGtDs[idx] = std::make_unique<PoseDS>(seqPath + mPathGT, true, true, mTsFactor);
-    }
+    // Do not implement this in BaseLoader (gives error for other datasets)
+    void BaseLoader::loadSequence(const string &dsRoot, const string &sqPath, const size_t idx) {}
 
     string BaseLoader::getSequencePath() {
 
@@ -208,7 +184,8 @@ namespace OG_SLAM {
         if (mLoadState == TabularTextDS::GOOD) {
             if (mSeqTarget < 0) {
                 return seq >= 0 && seq < mSeqCount;
-            } else {
+            }
+            else {
                 return seq == 0;
             }
         }
@@ -239,75 +216,6 @@ namespace OG_SLAM {
         return mLoadState == TabularTextDS::GOOD;
     }
 
-    void BaseLoader::resetCurrSequence() {
-
-        if (!checkSequence(mSeqIdx))
-            return;
-        this->mvpImDs[mSeqIdx]->reset();
-        this->mvpImuDs[mSeqIdx]->reset();
-        this->mvpGtDs[mSeqIdx]->reset();
-    }
-
-    unsigned int BaseLoader::getNumImages() {
-        if (!checkSequence(mSeqIdx))
-            return 0;
-        if (this->mvpImDs.empty() || !this->mvpImDs[mSeqIdx])
-            return 0;
-        return this->mvpImDs[mSeqIdx]->getNumFiles();
-    }
-
-    void BaseLoader::getImage(const size_t idx, cv::Mat &image, double &ts) {
-        if (!checkSequence(mSeqIdx))
-            return;
-        this->mvpImDs[mSeqIdx]->getImage(idx, image, ts);
-    }
-
-    void BaseLoader::getImage(const size_t idx, cv::Mat &image, double &ts, string& imPath) {
-        if (!checkSequence(mSeqIdx))
-            return;
-        this->mvpImDs[mSeqIdx]->getImage(idx, image, ts, imPath);
-    }
-
-    string BaseLoader::getImageFileName(const size_t idx, bool fullName) {
-        if (!checkSequence(mSeqIdx))
-            return string();
-        return this->mvpImDs[mSeqIdx]->getFileName(idx, fullName);
-    }
-
-    double BaseLoader::getImageTime(size_t idx) {
-        if (!checkSequence(mSeqIdx))
-            return 0.0;
-        return this->mvpImDs[mSeqIdx]->getTimeStamp(idx);
-    }
-
-    unsigned int BaseLoader::getNumTotalImages() {
-
-        unsigned int numIm = 0;
-        if (mSeqTarget < 0) {
-            for (auto & mvpImD : mvpImDs) {
-                numIm += mvpImD->getNumFiles();
-            }
-        }
-        else {
-            numIm = this->getNumImages();
-        }
-        return numIm;
-    }
-
-    unsigned int BaseLoader::getNextImu(const double ts, vector<IMU_DataPtr> &vpImuData) {
-
-        if (!checkSequence(mSeqIdx))
-            return 0;
-        return this->mvpImuDs[mSeqIdx]->getNextChunk(ts, vpImuData);
-    }
-
-    unsigned int BaseLoader::getNextPoseGT(const double ts, vector<PosePtr> &vpPoseGT) {
-
-        if (!checkSequence(mSeqIdx))
-            return 0;
-        return this->mvpGtDs[mSeqIdx]->getNextChunk(ts, vpPoseGT);
-    }
-
     void BaseLoader::addImageHook(ImageHookPtr &pImageHook) {
 
         mvpImageHooks.push_back(pImageHook);
@@ -323,51 +231,23 @@ namespace OG_SLAM {
         mvpGtPoseHooks.push_back(pPoseHook);
     }
 
-    void BaseLoader::play() {
+    std::string BaseLoader::printLoaderStateStr() {
 
-        if (mLoadState != TabularTextDS::GOOD) {
-            LOG(ERROR) << "** Loader::play: Load State is not good, abort\n";
-            return;
-        }
+        ostringstream oss;
 
-        uint nImages = this->getNumImages();
+        oss << "# Loader Info.:\n";
+        oss << "\tDataset State is: " << ((this->isGood()) ? "good" : "bad") << endl;
+        oss << "\tDataset Name: " << this->getDatasetName() << endl;
+        oss << "\tNum. Sequences: " << this->getNumSequences() << endl;
+        oss << "\tNum. Target Sequences: " << this->getNumTargetSequences() << endl;
+        oss << "\tNum. Max Iterations: " << this->getMaxNumIter() << endl;
+        oss << "\tCurrent Sequence Name: " << this->getSequenceName() << endl;
+        oss << "\tOutput Base Name: " << this->getOutputBasePath() << endl;
+        oss << "\tImages:\n";
+        oss << "\t\tNum. Total Images: " << this->getNumTotalImages() << endl;
+        oss << "\t\tCurrent Sequence Num. Images: " << this->getNumImages() << endl;
 
-        // Loop through images
-        for (uint i = 0; i < nImages; i++) {
-
-            // Get Data
-            // Image
-            double ts = 0.0;
-            cv::Mat image;
-            string imPath;
-            this->getImage(i, image, ts, imPath);
-            ImagePtr imData = make_shared<ImageTs>(image, ts, imPath);
-
-            // IMU
-            vector<IMU_DataPtr> vpImuData;
-            this->getNextImu(ts, vpImuData);
-
-            // GT
-            vector<PosePtr> vpPose;
-            this->getNextPoseGT(ts, vpPose);
-
-            // Dispatch Data
-            for (ImageHookPtr& imHook : mvpImageHooks) {
-                imHook->dispatch(imData);
-            }
-
-            for (const IMU_DataPtr& pImuData : vpImuData) {
-                for (IMU_HookPtr& pImuHook : mvpIMU_Hooks) {
-                    pImuHook->dispatch(pImuData);
-                }
-            }
-
-            for (const PosePtr& pPose : vpPose) {
-                for (PoseHookPtr& pGtPoseHook : mvpGtPoseHooks) {
-                    pGtPoseHook->dispatch(pPose);
-                }
-            }
-        }
+        return oss.str();
     }
 
 } // OG_SLAM

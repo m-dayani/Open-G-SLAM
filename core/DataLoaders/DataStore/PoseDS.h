@@ -44,12 +44,12 @@ namespace OG_SLAM {
         boost::any parseLine(const std::string &evStr) override;
     private:
         std::vector<PosePtr> mvGtData;
-        size_t mSIdx = 0;
+        size_t mSIdx;
         // For EuRoC type data qw is the first in quat data
         // For Ethz public event data the ordering is reverse
         // For both first is p, then q
-        bool posFirst = true;
-        bool qwFirst = true;
+        bool posFirst;
+        bool qwFirst;
     };
 
     typedef std::shared_ptr<PoseDS> PoseDS_Ptr;

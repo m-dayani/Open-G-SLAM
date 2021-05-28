@@ -18,17 +18,14 @@ namespace OG_SLAM {
         // Check dataset format
         if (mDsFormat != DS_Params::EV_MVSEC) {
             LOG(ERROR) << "** Initializing MVSEC loader with " << DS_Params::mapDsFormats(mDsFormat) << " data!\n";
+            mLoadState = TabularTextDS::BAD_DATA;
             return;
         }
 
         mPathEvents = pDsParams->getEventsPath();
 
-        mvpImDs.clear();
-        mvpImuDs.clear();
-        mvpGtDs.clear();
-
         this->loadData();
-        this->checkLoadState();
+        this->updateLoadState();
 
         mTopics = {mPathImFile, mPathImBase, mPathImu, mPathEvents, mPathGT};
     }
@@ -48,7 +45,7 @@ namespace OG_SLAM {
         // Load all messages into our stereo dataset
         foreach(rosbag::MessageInstance const m, view) {
 
-            if (m.getTopic() == mPathImBase || ("/" + m.getTopic() == mPathImBase))
+            if ((m.getTopic() == mPathImBase || ("/" + m.getTopic() == mPathImBase)) && !mvpImageHooks.empty())
             {
                 sensor_msgs::Image::ConstPtr l_img = m.instantiate<sensor_msgs::Image>();
                 cv_bridge::CvImagePtr cv_ptr;
@@ -80,13 +77,23 @@ namespace OG_SLAM {
 //                    cout << l_info->D.at(0) << endl;
 //                //camInfoCnt++;
 //            }
-            if (m.getTopic() == mPathEvents || ("/" + m.getTopic() == mPathEvents))
+            if ((m.getTopic() == mPathEvents || ("/" + m.getTopic() == mPathEvents)) && !mvpEventHooks.empty())
             {
-                //dvs_msgs::EventArray::ConstPtr evData = m.instantiate<dvs_msgs::EventArray>();
-                //if (evData != NULL)
-                //    cout << evData->events.size() << endl;
+                dvs_msgs::EventArray::ConstPtr evData = m.instantiate<dvs_msgs::EventArray>();
+                if (evData != nullptr) {
+
+                    for (const dvs_msgs::Event& ev : evData->events) {
+
+                        EvDataPtr pEvData = make_shared<EventData>(ev.ts.toSec(), ev.x, ev.y, ev.polarity);
+
+                        for (EventHookPtr& pEvHook : mvpEventHooks) {
+
+                            pEvHook->dispatch(pEvData);
+                        }
+                    }
+                }
             }
-            if (m.getTopic() == mPathImu || ("/" + m.getTopic() == mPathImu))
+            if ((m.getTopic() == mPathImu || ("/" + m.getTopic() == mPathImu)) && !mvpIMU_Hooks.empty())
             {
                 sensor_msgs::Imu::ConstPtr imuData = m.instantiate<sensor_msgs::Imu>();
                 if (imuData != nullptr) {
@@ -110,7 +117,7 @@ namespace OG_SLAM {
 
         foreach(rosbag::MessageInstance const m, gtView) {
 
-            if (m.getTopic() == mPathGT || ("/" + m.getTopic() == mPathGT))
+            if ((m.getTopic() == mPathGT || ("/" + m.getTopic() == mPathGT)) && !mvpGtPoseHooks.empty())
             {
                 auto gtData = m.instantiate<geometry_msgs::PoseStamped>();
                 if (gtData != nullptr) {
@@ -125,7 +132,6 @@ namespace OG_SLAM {
                     }
                 }
             }
-            break;
         }
     }
 
@@ -181,5 +187,41 @@ namespace OG_SLAM {
 
     bool MVSEC_Loader::checkSequence(unsigned int seq) const {
         return BaseLoader::checkSequence(seq);
+    }
+
+    unsigned int MVSEC_Loader::getNumImages() {
+        return 0;
+    }
+
+    unsigned int MVSEC_Loader::getNumTotalImages() {
+        return 0;
+    }
+
+    void MVSEC_Loader::getImage(size_t idx, cv::Mat &image, double &ts) {
+
+    }
+
+    void MVSEC_Loader::getImage(size_t idx, cv::Mat &image, double &ts, string &imPath) {
+
+    }
+
+    double MVSEC_Loader::getImageTime(size_t idx) {
+        return 0;
+    }
+
+    string MVSEC_Loader::getImageFileName(size_t idx) {
+        return std::__cxx11::string();
+    }
+
+    unsigned int MVSEC_Loader::getNextImu(double ts, vector<IMU_DataPtr> &vpImuData) {
+        return 0;
+    }
+
+    unsigned int MVSEC_Loader::getNextPoseGT(double ts, vector<PosePtr> &vpPose) {
+        return 0;
+    }
+
+    void MVSEC_Loader::resetCurrSequence() {
+
     }
 }

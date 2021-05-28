@@ -102,7 +102,7 @@ namespace OG_SLAM {
 
         const double invTsFactor = 1.0 / tsFactor;
 
-        while (mvImuData[mSIdx]->ts * invTsFactor <= tsEnd) {
+        while (mSIdx < mvImuData.size() && mvImuData[mSIdx]->ts * invTsFactor <= tsEnd) {
 
             vImuMeas.push_back(mvImuData[mSIdx]);
             this->incIdx();

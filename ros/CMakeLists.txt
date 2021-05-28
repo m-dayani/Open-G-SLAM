@@ -14,7 +14,7 @@ find_package(catkin REQUIRED COMPONENTS
         cpp_common
         rosbag
         sensor_msgs
-#        dvs_msgs
+        dvs_msgs
         cv_bridge
         std_msgs
         image_transport
@@ -152,7 +152,8 @@ target_link_libraries(${PROJECT_NAME} PUBLIC OG_SLAM::og_slam_core ${catkin_LIBR
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-#set(LIB_OG_SLAM_NAME og_slam_core)
+
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/examples)
 
 add_executable(rosbag_loader examples/rosbag_loader.cpp)
 target_link_libraries(rosbag_loader PRIVATE ${PROJECT_NAME})
