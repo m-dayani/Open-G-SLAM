@@ -31,19 +31,19 @@ Better to use a ROS distro with compatible OpenCV (with Core Library).
 For event-based SLAM, install DVS Event Messages according to the instructions.
 
 # Installation
-To make core library independent of ROS echo-system, this library is built as
-a separate package. If ROS extension desired, you should first build and install
-core library and then link it with ROS package.
+To make the core library independent of ROS echo system, this library is built as
+a separate package. If ROS extension is desired, you should first build and install
+the core library and then link it with ROS package.
 
 ## 1. Build and Install Core Library
 
 ## 2. Link ROS Library
 This can be done in 2 ways:
 ### - Using catkin_make
-Copy the content of ros folder in catkin work space directory as a ROS package.
+Copy the content of the ros folder in a catkin workspace directory as a ROS package.
 Then issue a catkin_make command.
 ### - Build with Core Library
-It is possible to build and link ROS package with core library.
-In project root CMakeLists.txt file, comment out ROS build.
-Then build and install core library so that find_package can recognize it.
-Finally, enable ROS build and build the project one more time.
+It is possible to build and link ROS package with the core library.
+In the project root CMakeLists.txt file, comment out ROS build.
+Then build and install the core library so that find_package can recognize it.
+Finally, enable ROS in the CMakeLists.txt file and build the project one more time.
